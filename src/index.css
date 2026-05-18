@@ -58,46 +58,36 @@ body {
   min-height: 420px;
 }
 
-.terrain {
-  position: absolute;
-  inset: auto;
-  border-radius: 999px;
-  filter: blur(2px);
+.map-backdrop {
+  background:
+    radial-gradient(circle at 75% 15%, rgba(249, 201, 139, 0.2), transparent 30%),
+    linear-gradient(180deg, rgba(8, 15, 24, 0.22), rgba(8, 15, 24, 0.56));
 }
 
-.terrain-one {
-  width: 70%;
-  height: 70%;
-  left: -10%;
-  bottom: -35%;
-  background: radial-gradient(circle at 30% 30%, rgba(118, 158, 180, 0.32), transparent 65%);
-}
-
-.terrain-two {
-  width: 65%;
-  height: 60%;
-  right: -10%;
-  top: -10%;
-  background: radial-gradient(circle at 40% 40%, rgba(225, 178, 135, 0.22), transparent 65%);
-}
-
-.terrain-three {
-  width: 55%;
-  height: 55%;
-  right: 10%;
-  bottom: -20%;
-  background: radial-gradient(circle at 40% 40%, rgba(145, 183, 255, 0.18), transparent 65%);
+.usa-map-placeholder {
+  inset: 2rem;
+  width: calc(100% - 4rem);
+  height: calc(100% - 4rem);
+  object-fit: contain;
+  opacity: 0.96;
+  filter: drop-shadow(0 24px 30px rgba(2, 6, 23, 0.56));
 }
 
 .map-grid {
   position: absolute;
   inset: 0;
-  opacity: 0.22;
+  opacity: 0.18;
   background-image:
     linear-gradient(rgba(255,255,255,0.16) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255,255,255,0.16) 1px, transparent 1px);
   background-size: 54px 54px;
-  mask-image: radial-gradient(circle at center, black, transparent 90%);
+  mask-image: radial-gradient(circle at center, black, transparent 92%);
+}
+
+.map-vignette {
+  background:
+    radial-gradient(circle at center, transparent 42%, rgba(4, 7, 12, 0.16) 70%, rgba(4, 7, 12, 0.68) 100%),
+    linear-gradient(180deg, rgba(4, 7, 12, 0.1), rgba(4, 7, 12, 0.4));
 }
 
 .scrapbook-photo {
