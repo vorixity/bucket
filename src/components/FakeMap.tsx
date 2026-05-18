@@ -9,9 +9,9 @@ interface FakeMapProps {
 
 const bounds = {
   north: 49.5,
-  south: 31,
+  south: 24.5,
   west: -124.8,
-  east: -82,
+  east: -66.9,
 };
 
 function positionFor(place: Place) {
@@ -34,12 +34,14 @@ export default function FakeMap({ places, filters, onSelectPlace }: FakeMapProps
 
   return (
     <div className="fake-map glass-panel relative overflow-hidden rounded-[2rem] border border-white/10">
-      <div className="absolute inset-0 opacity-80">
-        <div className="terrain terrain-one" />
-        <div className="terrain terrain-two" />
-        <div className="terrain terrain-three" />
-        <div className="map-grid" />
-      </div>
+      <div className="absolute inset-0 map-backdrop" />
+      <img
+        src={`${import.meta.env.BASE_URL}usa-map-placeholder.svg`}
+        alt="Temporary placeholder map of the United States"
+        className="usa-map-placeholder absolute"
+      />
+      <div className="absolute inset-0 map-grid" />
+      <div className="absolute inset-0 map-vignette" />
 
       <div className="absolute left-5 top-5 rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs uppercase tracking-[0.28em] text-white/60 backdrop-blur-md">
         Personal atlas
