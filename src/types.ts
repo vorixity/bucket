@@ -85,6 +85,7 @@ export interface MapFilters {
   returnList: boolean;
   unsaved: boolean;
   categories: Category[];
+  homeStateOnly: boolean;
 }
 
 export interface SavedMapView {
