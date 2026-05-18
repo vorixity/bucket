@@ -183,6 +183,10 @@ export default function App() {
     }));
   }
 
+  function markBeenThere(placeId: string) {
+    setStatus(placeId, 'beenThere');
+  }
+
   function openVisitFlow(placeId: string) {
     setVisitPlaceId(placeId);
   }
@@ -278,7 +282,7 @@ export default function App() {
       <Onboarding
         state={state}
         onSetState={setState}
-        onOpenVisitFlow={openVisitFlow}
+        onMarkBeenThere={markBeenThere}
         visitPlace={visitPlace}
         onSaveVisit={saveVisit}
         onCloseVisit={() => setVisitPlaceId(null)}
@@ -350,7 +354,7 @@ export default function App() {
                 setDetailMode('research');
               }}
               onBucketList={(place) => setStatus(place.id, 'bucketList')}
-              onBeenThere={(place) => openVisitFlow(place.id)}
+              onBeenThere={(place) => markBeenThere(place.id)}
             />
           )}
 
@@ -404,7 +408,8 @@ export default function App() {
           allPlaces={state.places}
           onClose={() => setSelectedPlaceId(null)}
           onBucketList={() => setStatus(selectedPlace.id, 'bucketList')}
-          onBeenThere={() => openVisitFlow(selectedPlace.id)}
+          onBeenThere={() => markBeenThere(selectedPlace.id)}
+          onAddVisitDetails={() => openVisitFlow(selectedPlace.id)}
           onReturn={() => setStatus(selectedPlace.id, 'returnList')}
           onFavorite={() => toggleFavorite(selectedPlace.id)}
           onSaveNotes={(notes) => saveNotes(selectedPlace.id, notes)}
@@ -454,14 +459,14 @@ export default function App() {
 function Onboarding({
   state,
   onSetState,
-  onOpenVisitFlow,
+  onMarkBeenThere,
   visitPlace,
   onSaveVisit,
   onCloseVisit,
 }: {
   state: BucketState;
   onSetState: React.Dispatch<React.SetStateAction<BucketState>>;
-  onOpenVisitFlow: (placeId: string) => void;
+  onMarkBeenThere: (placeId: string) => void;
   visitPlace: Place | null;
   onSaveVisit: (placeId: string, visit: Visit) => void;
   onCloseVisit: () => void;
@@ -535,7 +540,7 @@ function Onboarding({
               <p className="text-sm uppercase tracking-[0.28em] text-white/45">Favorite state selected</p>
               <h2 className="mt-3 text-3xl font-semibold">Start with {homeState}</h2>
               <p className="mt-3 max-w-2xl text-white/70">
-                Mark a few places so Bucket can begin to understand your atlas. “Been There” can stay simple now, with photos and dates added only when you want them.
+                Mark a few places so Bucket can begin to understand your atlas. “Been There” is instant; you can add dates and photos later if you want them.
               </p>
               <div className="mt-6 grid gap-4 md:grid-cols-2">
                 {popularPlaces.map((place) => (
@@ -544,7 +549,7 @@ function Onboarding({
                     <h3 className="mt-1 text-xl font-medium">{place.name}</h3>
                     <p className="mt-2 text-sm text-white/65">{place.shortDescription}</p>
                     <div className="mt-4 flex flex-wrap gap-2">
-                      <button type="button" className="soft-button" onClick={() => onOpenVisitFlow(place.id)}>
+                      <button type="button" className="soft-button" onClick={() => onMarkBeenThere(place.id)}>
                         Been There
                       </button>
                       <button
@@ -1126,6 +1131,7 @@ function PlacePanel({
   onClose,
   onBucketList,
   onBeenThere,
+  onAddVisitDetails,
   onReturn,
   onFavorite,
   onSaveNotes,
@@ -1138,6 +1144,7 @@ function PlacePanel({
   onClose: () => void;
   onBucketList: () => void;
   onBeenThere: () => void;
+  onAddVisitDetails: () => void;
   onReturn: () => void;
   onFavorite: () => void;
   onSaveNotes: (notes: string) => void;
@@ -1174,6 +1181,7 @@ function PlacePanel({
               <p className="max-w-3xl leading-8 text-white/75">{place.longDescription}</p>
               <div className="flex flex-wrap gap-2">
                 <button className="soft-button" onClick={onBeenThere}>Been There</button>
+                <button className="soft-button" onClick={onAddVisitDetails}>Add visit details</button>
                 <button className="soft-button" onClick={onBucketList}>Bucket List</button>
                 <button className="soft-button" onClick={onReturn}>Want to Return</button>
                 <button className="soft-button inline-flex items-center gap-2" onClick={onFavorite}>
@@ -1204,7 +1212,7 @@ function PlacePanel({
                         </div>
                       ))
                     ) : (
-                      <p className="text-white/55">No visits saved yet.</p>
+                      <p className="text-white/55">No visit details added yet.</p>
                     )}
                   </div>
                 </article>
@@ -1294,10 +1302,10 @@ function VisitModal({ place, onClose, onSave }: { place: Place; onClose: () => v
       <section className="glass-panel w-full max-w-xl rounded-[2rem] border border-white/10 p-5 md:p-7">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.28em] text-white/40">Been There</p>
-            <h2 className="mt-2 text-3xl font-semibold">Mark as visited</h2>
+            <p className="text-xs uppercase tracking-[0.28em] text-white/40">Visit details</p>
+            <h2 className="mt-2 text-3xl font-semibold">Add memory details</h2>
             <p className="mt-2 text-white/65">{place.name}</p>
-            <p className="mt-2 text-sm text-white/50">Add memory details now, later, or not at all.</p>
+            <p className="mt-2 text-sm text-white/50">Everything here is optional.</p>
           </div>
           <button className="rounded-full bg-black/20 p-2" onClick={onClose}>
             <X className="h-5 w-5" />
@@ -1327,7 +1335,7 @@ function VisitModal({ place, onClose, onSave }: { place: Place; onClose: () => v
               <input type="date" className="input-shell" value={endDate} onChange={(event) => setEndDate(event.target.value)} />
             </label>
           </div>
-          <p className="text-xs text-white/45">Photos and travel dates are optional. Bucket will still mark this place as visited.</p>
+          <p className="text-xs text-white/45">You can leave all of this blank and still keep the place marked as visited.</p>
         </div>
 
         <button
@@ -1344,7 +1352,7 @@ function VisitModal({ place, onClose, onSave }: { place: Place; onClose: () => v
             })
           }
         >
-          Mark as Been There
+          Save visit details
         </button>
       </section>
     </div>
