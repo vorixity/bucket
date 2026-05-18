@@ -54,7 +54,8 @@ body {
   @apply w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none placeholder:text-white/40 focus:border-white/25;
 }
 
-.fake-map {
+.fake-map,
+.real-map {
   min-height: 420px;
 }
 
@@ -88,6 +89,70 @@ body {
   background:
     radial-gradient(circle at center, transparent 42%, rgba(4, 7, 12, 0.16) 70%, rgba(4, 7, 12, 0.68) 100%),
     linear-gradient(180deg, rgba(4, 7, 12, 0.1), rgba(4, 7, 12, 0.4));
+}
+
+.real-map .maplibregl-canvas {
+  outline: none;
+}
+
+.real-map .maplibregl-ctrl-group {
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 1rem;
+  background: rgba(8, 15, 24, 0.72);
+  box-shadow: none;
+  backdrop-filter: blur(18px);
+}
+
+.real-map .maplibregl-ctrl-group button {
+  background-color: transparent;
+}
+
+.real-map .maplibregl-ctrl-attrib {
+  background: rgba(8, 15, 24, 0.65);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.real-map .maplibregl-ctrl-attrib a {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.real-map-marker {
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: transform 180ms ease, opacity 180ms ease;
+}
+
+.real-map-marker:hover {
+  transform: scale(1.18);
+}
+
+.real-map-marker-been {
+  width: 1rem;
+  height: 1rem;
+  background: #8ee7d7;
+  box-shadow: 0 0 24px rgba(142, 231, 215, 0.9);
+}
+
+.real-map-marker-bucket {
+  width: 1rem;
+  height: 1rem;
+  background: rgba(255, 255, 255, 0.52);
+}
+
+.real-map-marker-return {
+  width: 1.15rem;
+  height: 1.15rem;
+  border: 2px solid rgba(255, 255, 255, 0.42);
+  background: #91b7ff;
+  box-shadow: 0 0 24px rgba(145, 183, 255, 0.9);
+}
+
+.real-map-marker-unsaved {
+  width: 0.62rem;
+  height: 0.62rem;
+  background: rgba(255, 255, 255, 0.24);
 }
 
 .scrapbook-photo {
