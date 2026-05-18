@@ -1,0 +1,117 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  background: #090b10;
+  color: #fff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #090b10;
+}
+
+.app-background {
+  background-image:
+    linear-gradient(180deg, rgba(4, 7, 12, 0.35), rgba(4, 7, 12, 0.86)),
+    radial-gradient(circle at top right, rgba(255, 178, 122, 0.2), transparent 30%),
+    url('/bucket-background.svg');
+  background-position: center;
+  background-size: cover;
+  background-attachment: fixed;
+}
+
+.glass-panel {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.06));
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+}
+
+.soft-button {
+  @apply rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white/85 transition hover:bg-white/15;
+}
+
+.soft-button-active {
+  @apply border-white/25 bg-white/20 text-white;
+}
+
+.input-shell {
+  @apply w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none placeholder:text-white/40 focus:border-white/25;
+}
+
+.fake-map {
+  min-height: 420px;
+}
+
+.terrain {
+  position: absolute;
+  inset: auto;
+  border-radius: 999px;
+  filter: blur(2px);
+}
+
+.terrain-one {
+  width: 70%;
+  height: 70%;
+  left: -10%;
+  bottom: -35%;
+  background: radial-gradient(circle at 30% 30%, rgba(118, 158, 180, 0.32), transparent 65%);
+}
+
+.terrain-two {
+  width: 65%;
+  height: 60%;
+  right: -10%;
+  top: -10%;
+  background: radial-gradient(circle at 40% 40%, rgba(225, 178, 135, 0.22), transparent 65%);
+}
+
+.terrain-three {
+  width: 55%;
+  height: 55%;
+  right: 10%;
+  bottom: -20%;
+  background: radial-gradient(circle at 40% 40%, rgba(145, 183, 255, 0.18), transparent 65%);
+}
+
+.map-grid {
+  position: absolute;
+  inset: 0;
+  opacity: 0.22;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.16) 1px, transparent 1px);
+  background-size: 54px 54px;
+  mask-image: radial-gradient(circle at center, black, transparent 90%);
+}
+
+.scrapbook-photo {
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
