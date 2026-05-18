@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react';
-import FakeMap from '../components/FakeMap';
+import RealMap from '../components/RealMap';
 import type { MapFilters, Place } from '../types';
 
 export interface MapProviderProps {
@@ -9,13 +9,13 @@ export interface MapProviderProps {
 }
 
 export interface MapProviderDefinition {
-  id: 'fake';
+  id: 'real' | 'fake';
   label: string;
   Component: ComponentType<MapProviderProps>;
 }
 
 export const activeMapProvider: MapProviderDefinition = {
-  id: 'fake',
-  label: 'USA placeholder map',
-  Component: FakeMap,
+  id: 'real',
+  label: 'Interactive map',
+  Component: RealMap,
 };
