@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   Bookmark,
   Camera,
-  Compass,
   Globe2,
   Heart,
   Image as ImageIcon,
@@ -17,12 +16,12 @@ import {
   X,
 } from 'lucide-react';
 import clsx from 'clsx';
-import FakeMap from './components/FakeMap';
 import { ALL_CATEGORIES, BASE_PLACES } from './data/places';
 import { US_STATES } from './data/states';
 import { getRecommendations } from './lib/recommendations';
 import { searchPlaces } from './lib/search';
 import { clearState, loadState, saveState } from './lib/storage';
+import { activeMapProvider } from './maps/provider';
 import type {
   BucketState,
   Category,
@@ -42,6 +41,7 @@ const defaultMapFilters: MapFilters = {
   returnList: true,
   unsaved: false,
   categories: [],
+  homeStateOnly: false,
 };
 
 const initialState: BucketState = {
@@ -81,6 +81,17 @@ const recommendationModes: RecommendationMode[] = [
   'Hidden gems',
 ];
 
+const settingsLabels: Record<keyof BucketState['settings'], string> = {
+  privateProfile: 'Private profile',
+  showBucketListPublicly: 'Show Bucket List publicly',
+  showBeenTherePublicly: 'Show Been There publicly',
+  useRecommendations: 'Use recommendations',
+  darkModeAlwaysOn: 'Dark mode always on',
+  showUnsavedPlacesOnMap: 'Show unsaved places on map',
+  reduceMotion: 'Reduce motion',
+  compactCards: 'Compact cards',
+};
+
 function isVisited(place: Place) {
   return place.visitCount > 0 || place.status === 'beenThere' || place.status === 'returnList';
 }
@@ -95,6 +106,13 @@ function percentage(part: number, whole: number) {
 
 function uid(prefix: string) {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function statusLabel(status: PlaceStatus) {
+  if (status === 'bucketList') return 'Bucket List';
+  if (status === 'beenThere') return 'Been There';
+  if (status === 'returnList') return 'Return List';
+  return 'Unsaved';
 }
 
 function heroGradient(place: Place) {
@@ -118,6 +136,8 @@ export default function App() {
   const [visitPlaceId, setVisitPlaceId] = useState<string | null>(null);
   const [recommendationMode, setRecommendationMode] = useState<RecommendationMode>('More like my Bucket List');
   const [showRecommendations, setShowRecommendations] = useState(false);
+  const [entryModal, setEntryModal] = useState<null | { kind: 'mapView' | 'customList'; placeId?: string }>(null);
+  const [showResetDialog, setShowResetDialog] = useState(false);
 
   useEffect(() => {
     saveState(state);
@@ -129,6 +149,13 @@ export default function App() {
   const effectiveFilters = useMemo(
     () => ({ ...mapFilters, unsaved: mapFilters.unsaved && state.settings.showUnsavedPlacesOnMap }),
     [mapFilters, state.settings.showUnsavedPlacesOnMap],
+  );
+  const mapPlaces = useMemo(
+    () =>
+      mapFilters.homeStateOnly && state.profile.homeState
+        ? state.places.filter((place) => place.state === state.profile.homeState)
+        : state.places,
+    [mapFilters.homeStateOnly, state.places, state.profile.homeState],
   );
 
   const recommendations = useMemo<Recommendation[]>(
@@ -175,12 +202,10 @@ export default function App() {
     updatePlace(placeId, (place) => ({ ...place, notes }));
   }
 
-  function saveMapView() {
-    const name = window.prompt('Name this map view');
-    if (!name?.trim()) return;
+  function saveMapView(name: string) {
     const nextView: SavedMapView = {
       id: uid('view'),
-      name: name.trim(),
+      name,
       filters: mapFilters,
     };
     setState((current) => ({ ...current, savedMapViews: [nextView, ...current.savedMapViews] }));
@@ -192,7 +217,7 @@ export default function App() {
     if (preset === 'Only Bucket List') setMapFilters({ ...defaultMapFilters, beenThere: false, returnList: false });
     if (preset === 'Parks Only') setMapFilters({ ...defaultMapFilters, categories: ['National Parks', 'State Parks'] });
     if (preset === 'Stadium Map') setMapFilters({ ...defaultMapFilters, categories: ['Stadiums'] });
-    if (preset === 'Home State Progress') setMapFilters(defaultMapFilters);
+    if (preset === 'Home State Progress') setMapFilters({ ...defaultMapFilters, homeStateOnly: true });
     if (preset === 'National Parks Progress') setMapFilters({ ...defaultMapFilters, categories: ['National Parks'] });
   }
 
@@ -205,11 +230,9 @@ export default function App() {
     }));
   }
 
-  function addToCustomList(placeId: string) {
-    const name = window.prompt('Custom list name');
-    if (!name?.trim()) return;
+  function addToCustomList(placeId: string, name: string) {
     setState((current) => {
-      const existing = current.customLists.find((list) => list.name.toLowerCase() === name.trim().toLowerCase());
+      const existing = current.customLists.find((list) => list.name.toLowerCase() === name.toLowerCase());
       if (existing) {
         return {
           ...current,
@@ -221,19 +244,19 @@ export default function App() {
         };
       }
 
-      const nextList: CustomList = { id: uid('list'), name: name.trim(), placeIds: [placeId] };
+      const nextList: CustomList = { id: uid('list'), name, placeIds: [placeId] };
       return { ...current, customLists: [nextList, ...current.customLists] };
     });
   }
 
   function resetData() {
-    if (!window.confirm('Reset all Bucket data on this device?')) return;
     clearState();
     setState(initialState);
     setActiveTab('Map');
     setSelectedPlaceId(null);
     setVisitPlaceId(null);
     setQuery('');
+    setShowResetDialog(false);
   }
 
   function markNotInterested(placeId: string) {
@@ -308,10 +331,11 @@ export default function App() {
               searchResults={searchResults}
               mapFilters={mapFilters}
               effectiveFilters={effectiveFilters}
+              mapPlaces={mapPlaces}
               setMapFilters={setMapFilters}
               toggleCategory={toggleCategory}
               applyPreset={applyPreset}
-              saveMapView={saveMapView}
+              onSaveMapView={() => setEntryModal({ kind: 'mapView' })}
               onSelectPlace={(place) => {
                 setSelectedPlaceId(place.id);
                 setDetailMode('view');
@@ -362,7 +386,7 @@ export default function App() {
             <ProfileTab
               state={state}
               setState={setState}
-              onReset={resetData}
+              onReset={() => setShowResetDialog(true)}
             />
           )}
         </section>
@@ -379,7 +403,7 @@ export default function App() {
           onReturn={() => setStatus(selectedPlace.id, 'returnList')}
           onFavorite={() => toggleFavorite(selectedPlace.id)}
           onSaveNotes={(notes) => saveNotes(selectedPlace.id, notes)}
-          onAddToCustomList={() => addToCustomList(selectedPlace.id)}
+          onAddToCustomList={() => setEntryModal({ kind: 'customList', placeId: selectedPlace.id })}
           onOpenPlace={(place, nextMode = 'view') => {
             setSelectedPlaceId(place.id);
             setDetailMode(nextMode);
@@ -392,6 +416,30 @@ export default function App() {
           place={visitPlace}
           onClose={() => setVisitPlaceId(null)}
           onSave={(visit) => saveVisit(visitPlace.id, visit)}
+        />
+      )}
+
+      {entryModal && (
+        <TextEntryModal
+          title={entryModal.kind === 'mapView' ? 'Save custom map view' : 'Add to custom list'}
+          placeholder={entryModal.kind === 'mapView' ? 'Weekend parks' : 'Photography trips'}
+          actionLabel={entryModal.kind === 'mapView' ? 'Save view' : 'Save list'}
+          onClose={() => setEntryModal(null)}
+          onSubmit={(value) => {
+            if (entryModal.kind === 'mapView') saveMapView(value);
+            if (entryModal.kind === 'customList' && entryModal.placeId) addToCustomList(entryModal.placeId, value);
+            setEntryModal(null);
+          }}
+        />
+      )}
+
+      {showResetDialog && (
+        <ConfirmDialog
+          title="Reset local data?"
+          description="This clears your Bucket data on this browser, including visits, photos, notes, saved views, and preferences."
+          confirmLabel="Reset local data"
+          onClose={() => setShowResetDialog(false)}
+          onConfirm={resetData}
         />
       )}
     </main>
@@ -541,10 +589,11 @@ function MapTab({
   searchResults,
   mapFilters,
   effectiveFilters,
+  mapPlaces,
   setMapFilters,
   toggleCategory,
   applyPreset,
-  saveMapView,
+  onSaveMapView,
   onSelectPlace,
   onResearch,
   onBucketList,
@@ -556,16 +605,18 @@ function MapTab({
   searchResults: Place[];
   mapFilters: MapFilters;
   effectiveFilters: MapFilters;
+  mapPlaces: Place[];
   setMapFilters: React.Dispatch<React.SetStateAction<MapFilters>>;
   toggleCategory: (category: Category) => void;
   applyPreset: (preset: string) => void;
-  saveMapView: () => void;
+  onSaveMapView: () => void;
   onSelectPlace: (place: Place) => void;
   onResearch: (place: Place) => void;
   onBucketList: (place: Place) => void;
   onBeenThere: (place: Place) => void;
 }) {
   const presets = ['My Whole Map', 'Only Been There', 'Only Bucket List', 'Parks Only', 'Stadium Map', 'Home State Progress', 'National Parks Progress'];
+  const ActiveMap = activeMapProvider.Component;
 
   return (
     <>
@@ -590,7 +641,7 @@ function MapTab({
                       <p className="text-sm text-white/45">{place.state} · {place.category}</p>
                       <h3 className="mt-1 text-xl font-medium">{place.name}</h3>
                     </div>
-                    <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-white/70">{place.status}</span>
+                    <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-white/70">{statusLabel(place.status)}</span>
                   </div>
                   <p className="mt-3 text-sm leading-6 text-white/70">{place.shortDescription}</p>
                   <div className="mt-4 flex flex-wrap gap-2">
@@ -609,7 +660,14 @@ function MapTab({
       </section>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
-        <FakeMap places={state.places} filters={effectiveFilters} onSelectPlace={onSelectPlace} />
+        <div className="grid gap-3">
+          {mapFilters.homeStateOnly && state.profile.homeState && (
+            <div className="glass-panel rounded-3xl border border-white/10 px-4 py-3 text-sm text-white/70">
+              Showing only <span className="text-white">{state.profile.homeState}</span> places for home state progress.
+            </div>
+          )}
+          <ActiveMap places={mapPlaces} filters={effectiveFilters} onSelectPlace={onSelectPlace} />
+        </div>
 
         <section className="glass-panel rounded-[2rem] border border-white/10 p-4 md:p-5">
           <div className="flex items-center gap-2">
@@ -636,6 +694,9 @@ function MapTab({
                 </button>
               ))}
             </div>
+            {!state.settings.showUnsavedPlacesOnMap && mapFilters.unsaved && (
+              <p className="mt-3 text-xs text-white/45">Unsaved places stay hidden until enabled in Profile settings.</p>
+            )}
           </div>
 
           <div className="mt-5">
@@ -665,7 +726,7 @@ function MapTab({
             </div>
           </div>
 
-          <button type="button" className="soft-button mt-5 inline-flex items-center gap-2" onClick={saveMapView}>
+          <button type="button" className="soft-button mt-5 inline-flex items-center gap-2" onClick={onSaveMapView}>
             <Plus className="h-4 w-4" /> Save custom map view
           </button>
 
@@ -688,21 +749,50 @@ function MapTab({
 }
 
 function BucketTab({ state, onSelectPlace }: { state: BucketState; onSelectPlace: (place: Place) => void }) {
+  const [categoryFilter, setCategoryFilter] = useState<'All' | Category>('All');
+  const [sortMode, setSortMode] = useState<'Name' | 'Newest' | 'Bucket Score'>('Name');
+
+  function filterAndSort(places: Place[]) {
+    const filtered = categoryFilter === 'All' ? places : places.filter((place) => place.category === categoryFilter);
+    return filtered.slice().sort((a, b) => {
+      if (sortMode === 'Newest') return (b.recentlyAddedAt ?? '').localeCompare(a.recentlyAddedAt ?? '');
+      if (sortMode === 'Bucket Score') return b.bucketScore - a.bucketScore;
+      return sortByName(a, b);
+    });
+  }
+
   const sections = [
-    ['Bucket List', state.places.filter((place) => place.status === 'bucketList')],
-    ['Been There', state.places.filter(isVisited)],
-    ['Return List', state.places.filter((place) => place.status === 'returnList')],
-    ['Favorites', state.places.filter((place) => place.isFavorite)],
-    [
-      'Recently Added',
-      state.places
-        .filter((place) => place.recentlyAddedAt)
-        .sort((a, b) => (b.recentlyAddedAt ?? '').localeCompare(a.recentlyAddedAt ?? '')),
-    ],
+    ['Bucket List', filterAndSort(state.places.filter((place) => place.status === 'bucketList'))],
+    ['Been There', filterAndSort(state.places.filter(isVisited))],
+    ['Return List', filterAndSort(state.places.filter((place) => place.status === 'returnList'))],
+    ['Favorites', filterAndSort(state.places.filter((place) => place.isFavorite))],
+    ['Recently Added', filterAndSort(state.places.filter((place) => place.recentlyAddedAt))],
   ] as const;
 
   return (
     <div className="grid gap-4">
+      <section className="glass-panel rounded-[2rem] border border-white/10 p-4 md:p-6">
+        <div className="grid gap-3 md:grid-cols-2">
+          <label>
+            <span className="mb-2 block text-sm text-white/45">Filter by category</span>
+            <select className="input-shell" value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value as 'All' | Category)}>
+              <option>All</option>
+              {ALL_CATEGORIES.map((category) => (
+                <option key={category}>{category}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span className="mb-2 block text-sm text-white/45">Sort by</span>
+            <select className="input-shell" value={sortMode} onChange={(event) => setSortMode(event.target.value as 'Name' | 'Newest' | 'Bucket Score')}>
+              <option>Name</option>
+              <option>Newest</option>
+              <option>Bucket Score</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
       {sections.map(([title, places]) => (
         <section key={title} className="glass-panel rounded-[2rem] border border-white/10 p-4 md:p-6">
           <div className="flex items-center justify-between gap-3">
@@ -711,10 +801,11 @@ function BucketTab({ state, onSelectPlace }: { state: BucketState; onSelectPlace
           </div>
           <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {places.length ? (
-              places.sort(sortByName).map((place) => (
+              places.map((place) => (
                 <button key={place.id} className="rounded-3xl border border-white/10 bg-black/20 p-4 text-left hover:bg-white/10" onClick={() => onSelectPlace(place)}>
                   <p className="text-sm text-white/45">{place.state} · {place.category}</p>
                   <h3 className="mt-1 text-lg font-medium">{place.name}</h3>
+                  <p className="mt-3 text-sm text-white/55">Bucket Score {place.bucketScore}</p>
                 </button>
               ))
             ) : (
@@ -788,20 +879,30 @@ function ExploreTab({
           </div>
 
           <div className="mt-5 grid gap-4 lg:grid-cols-2">
-            {recommendations.map(({ place, reason }) => (
-              <article key={place.id} className="rounded-3xl border border-white/10 bg-black/20 p-4">
-                <p className="text-sm text-white/45">{place.state} · {place.category}</p>
-                <h3 className="mt-1 text-xl font-medium">{place.name}</h3>
-                <p className="mt-3 text-sm leading-6 text-white/70">{reason}</p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <button className="soft-button" onClick={() => onSelectPlace(place)}>View</button>
-                  <button className="soft-button" onClick={() => onResearch(place)}>Research</button>
-                  <button className="soft-button" onClick={() => onBucketList(place)}>Bucket List</button>
-                  <button className="soft-button" onClick={() => onNotInterested(place)}>Not Interested</button>
-                </div>
-              </article>
-            ))}
+            {recommendations.length ? (
+              recommendations.map(({ place, reason }) => (
+                <article key={place.id} className="rounded-3xl border border-white/10 bg-black/20 p-4">
+                  <p className="text-sm text-white/45">{place.state} · {place.category}</p>
+                  <h3 className="mt-1 text-xl font-medium">{place.name}</h3>
+                  <p className="mt-3 text-sm leading-6 text-white/70">{reason}</p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button className="soft-button" onClick={() => onSelectPlace(place)}>View</button>
+                    <button className="soft-button" onClick={() => onResearch(place)}>Research</button>
+                    <button className="soft-button" onClick={() => onBucketList(place)}>Bucket List</button>
+                    <button className="soft-button" onClick={() => onNotInterested(place)}>Not Interested</button>
+                  </div>
+                </article>
+              ))
+            ) : (
+              <div className="rounded-3xl border border-white/10 bg-black/20 p-5 text-white/60">No fresh matches in this mode right now.</div>
+            )}
           </div>
+        </section>
+      )}
+
+      {showRecommendations && !state.settings.useRecommendations && (
+        <section className="glass-panel rounded-[2rem] border border-white/10 p-5 text-white/65">
+          Recommendations are currently disabled in Profile settings.
         </section>
       )}
     </div>
@@ -819,19 +920,21 @@ function PassportTab({ state }: { state: BucketState }) {
   const categoryCounts = ALL_CATEGORIES.map((category) => ({
     category,
     count: visitedPlaces.filter((place) => place.category === category).length,
+    total: state.places.filter((place) => place.category === category).length,
   }));
-  const mostVisitedCategory = categoryCounts.sort((a, b) => b.count - a.count)[0]?.category ?? '—';
+  const mostVisitedCategory = visitedPlaces.length ? categoryCounts.slice().sort((a, b) => b.count - a.count)[0]?.category ?? '—' : '—';
   const mostVisitedState = visitedStates
     .map((stateName) => ({ stateName, count: visitedPlaces.filter((place) => place.state === stateName).length }))
     .sort((a, b) => b.count - a.count)[0]?.stateName ?? '—';
   const homePlaces = state.places.filter((place) => place.state === state.profile.homeState);
   const homeVisited = homePlaces.filter(isVisited).length;
+  const longitudeSpread = visitedPlaces.length ? Math.max(...visitedPlaces.map((place) => place.longitude)) - Math.min(...visitedPlaces.map((place) => place.longitude)) : 0;
 
   const badges = [
     ['First National Park', nationalParksVisited >= 1],
     ['Home State Explorer', homeVisited >= 3],
     ['Stadium Chaser', stadiumsVisited >= 3],
-    ['Coast to Coast', visitedStates.includes('California') && visitedStates.includes('Washington')],
+    ['Coast to Coast', longitudeSpread >= 25],
     ['10 Places Visited', visitedPlaces.length >= 10],
     ['25 Places Visited', visitedPlaces.length >= 25],
     ['California 10%', percentage(visitedPlaces.filter((place) => place.state === 'California').length, state.places.filter((place) => place.state === 'California').length) >= 10],
@@ -882,7 +985,11 @@ function PassportTab({ state }: { state: BucketState }) {
         <article className="glass-panel rounded-[2rem] border border-white/10 p-5 md:p-7">
           <h2 className="text-2xl font-semibold">Travel identity summary</h2>
           <p className="mt-4 leading-7 text-white/70">
-            You are most drawn to <span className="text-white">{mostVisitedCategory}</span>, with the deepest footprint in <span className="text-white">{mostVisitedState}</span>. Your atlas currently leans toward {nationalParksVisited >= stadiumsVisited ? 'landscape-led travel' : 'event-led travel'}.
+            {visitedPlaces.length
+              ? <>
+                  You are most drawn to <span className="text-white">{mostVisitedCategory}</span>, with the deepest footprint in <span className="text-white">{mostVisitedState}</span>. Your atlas currently leans toward {nationalParksVisited >= stadiumsVisited ? 'landscape-led travel' : 'event-led travel'}.
+                </>
+              : 'Your atlas is just beginning. Save a few places or record your first visit and Bucket will start shaping a travel identity around you.'}
           </p>
         </article>
       </section>
@@ -924,6 +1031,20 @@ function PassportTab({ state }: { state: BucketState }) {
             })}
           </div>
         </article>
+      </section>
+
+      <section className="glass-panel rounded-[2rem] border border-white/10 p-5 md:p-7">
+        <h2 className="text-2xl font-semibold">Category completion grid</h2>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {categoryCounts.map(({ category, count, total }) => (
+            <div key={category} className="rounded-2xl border border-white/10 bg-black/20 p-3">
+              <div className="flex justify-between gap-3 text-sm">
+                <span>{category}</span>
+                <span className="text-white/45">{percentage(count, total)}%</span>
+              </div>
+            </div>
+          ))}
+        </div>
       </section>
     </div>
   );
@@ -968,7 +1089,7 @@ function ProfileTab({
         <div className="mt-5 grid gap-3 md:grid-cols-2">
           {Object.entries(state.settings).map(([key, value]) => (
             <label key={key} className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/20 p-4">
-              <span className="capitalize text-white/75">{key.replace(/([A-Z])/g, ' $1')}</span>
+              <span className="text-white/75">{settingsLabels[key as keyof BucketState['settings']]}</span>
               <input
                 type="checkbox"
                 checked={value}
@@ -1037,6 +1158,7 @@ function PlacePanel({
         <div className="grid gap-5 p-5 md:p-7">
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-full bg-white/10 px-3 py-2 text-sm">Bucket Score {place.bucketScore}</span>
+            <span className="rounded-full bg-white/10 px-3 py-2 text-sm">{statusLabel(place.status)}</span>
             {place.tags.map((tag) => (
               <span key={tag} className="rounded-full bg-black/20 px-3 py-2 text-sm text-white/70">#{tag}</span>
             ))}
@@ -1115,6 +1237,10 @@ function PlacePanel({
               <article className="rounded-3xl border border-white/10 bg-black/20 p-4">
                 <p className="text-sm text-white/45">Best photo spots</p>
                 <p className="mt-2 leading-7 text-white/75">{place.researchDetails.bestPhotoSpots.join(', ')}</p>
+              </article>
+              <article className="rounded-3xl border border-white/10 bg-black/20 p-4">
+                <p className="text-sm text-white/45">Nearby things to do</p>
+                <p className="mt-2 leading-7 text-white/75">{place.researchDetails.nearbyThingsToDo.join(', ')}</p>
               </article>
             </div>
           )}
@@ -1195,12 +1321,13 @@ function VisitModal({ place, onClose, onSave }: { place: Place; onClose: () => v
               <input type="date" className="input-shell" value={endDate} onChange={(event) => setEndDate(event.target.value)} />
             </label>
           </div>
+          <p className="text-xs text-white/45">A photo and start date are required before Bucket marks this place as visited.</p>
         </div>
 
         <button
           type="button"
           className="soft-button mt-5"
-          disabled={!startDate}
+          disabled={!startDate || !photo}
           onClick={() =>
             onSave({
               id: uid('visit'),
@@ -1214,6 +1341,66 @@ function VisitModal({ place, onClose, onSave }: { place: Place; onClose: () => v
         >
           Save visit
         </button>
+      </section>
+    </div>
+  );
+}
+
+function TextEntryModal({
+  title,
+  placeholder,
+  actionLabel,
+  onClose,
+  onSubmit,
+}: {
+  title: string;
+  placeholder: string;
+  actionLabel: string;
+  onClose: () => void;
+  onSubmit: (value: string) => void;
+}) {
+  const [value, setValue] = useState('');
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm">
+      <section className="glass-panel w-full max-w-md rounded-[2rem] border border-white/10 p-5">
+        <div className="flex items-start justify-between gap-4">
+          <h2 className="text-2xl font-semibold">{title}</h2>
+          <button className="rounded-full bg-black/20 p-2" onClick={onClose}>
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <input className="input-shell mt-5" value={value} onChange={(event) => setValue(event.target.value)} placeholder={placeholder} />
+        <button className="soft-button mt-4" disabled={!value.trim()} onClick={() => onSubmit(value.trim())}>
+          {actionLabel}
+        </button>
+      </section>
+    </div>
+  );
+}
+
+function ConfirmDialog({
+  title,
+  description,
+  confirmLabel,
+  onClose,
+  onConfirm,
+}: {
+  title: string;
+  description: string;
+  confirmLabel: string;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm">
+      <section className="glass-panel w-full max-w-md rounded-[2rem] border border-white/10 p-5">
+        <h2 className="text-2xl font-semibold">{title}</h2>
+        <p className="mt-3 leading-7 text-white/70">{description}</p>
+        <div className="mt-5 flex flex-wrap gap-2">
+          <button className="soft-button" onClick={onClose}>Cancel</button>
+          <button className="soft-button" onClick={onConfirm}>{confirmLabel}</button>
+        </div>
       </section>
     </div>
   );
