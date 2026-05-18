@@ -1,6 +1,6 @@
-import type { Place } from '../types';
+import type { Category, Place } from '../types';
 
-const categoryAliases: Record<string, string> = {
+const categoryAliases: Record<string, Category> = {
   stadiums: 'Stadiums',
   stadium: 'Stadiums',
   parks: 'National Parks',
@@ -8,10 +8,16 @@ const categoryAliases: Record<string, string> = {
   beaches: 'Beaches',
   beach: 'Beaches',
   museums: 'Museums',
+  museum: 'Museums',
   universities: 'Universities',
+  university: 'Universities',
   roads: 'Scenic Roads',
+  'scenic roads': 'Scenic Roads',
   airports: 'Airports',
+  airport: 'Airports',
 };
+
+const fillerWords = new Set(['in', 'of', 'the', 'a', 'an', 'places', 'place', 'spots']);
 
 export function searchPlaces(places: Place[], rawQuery: string) {
   const query = rawQuery.trim().toLowerCase();
@@ -21,10 +27,12 @@ export function searchPlaces(places: Place[], rawQuery: string) {
   const categoryMatch = Object.entries(categoryAliases).find(([alias]) => query.includes(alias))?.[1];
 
   const normalizedTokens = query
-    .replace('places in ', '')
     .replace('photography spots', 'photography')
+    .replace('places in ', '')
     .split(/\s+/)
-    .filter(Boolean);
+    .filter((token) => token && !fillerWords.has(token))
+    .filter((token) => token !== stateMatch?.toLowerCase())
+    .filter((token) => !categoryMatch?.toLowerCase().includes(token));
 
   return places
     .filter((place) => {
