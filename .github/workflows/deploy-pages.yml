@@ -27,6 +27,8 @@ jobs:
       - name: Install dependencies
         run: npm install
       - name: Build
+        env:
+          VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
         run: npm run build
       - name: Setup Pages
         uses: actions/configure-pages@v5
