@@ -16,6 +16,6 @@ export interface MapProviderDefinition {
 
 export const activeMapProvider: MapProviderDefinition = {
   id: 'fake',
-  label: 'Cinematic fake map',
+  label: 'USA placeholder map',
   Component: FakeMap,
 };
