@@ -121,11 +121,11 @@ body {
   border: 0;
   border-radius: 999px;
   cursor: pointer;
-  transition: transform 180ms ease, opacity 180ms ease;
+  transition: opacity 180ms ease, filter 180ms ease;
 }
 
 .real-map-marker:hover {
-  transform: scale(1.18);
+  filter: brightness(1.18);
 }
 
 .real-map-marker-been {
