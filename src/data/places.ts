@@ -1,5 +1,14 @@
 import type { Category, Place, ResearchDetails } from '../types';
 
+type RawPlaceSeed = [
+  name: string,
+  region: string,
+  category: Category,
+  latitude: number,
+  longitude: number,
+  tags: string[],
+];
+
 interface PlaceSeed {
   name: string;
   region: string;
@@ -9,7 +18,7 @@ interface PlaceSeed {
   tags: string[];
 }
 
-const seedsByState: Record<string, PlaceSeed[]> = {
+const seedsByState: Record<string, RawPlaceSeed[]> = {
   California: [
     ['Yosemite National Park', 'Sierra Nevada', 'National Parks', 37.8651, -119.5383, ['mountains', 'waterfalls', 'photography', 'hiking']],
     ['Joshua Tree National Park', 'Mojave Desert', 'National Parks', 33.8734, -115.901, ['desert', 'sunset', 'hiking', 'photography']],
@@ -168,12 +177,15 @@ function researchFor(seed: PlaceSeed, state: string): ResearchDetails {
     howLongToSpend: seed.category === 'Cities' ? '2–3 days' : seed.category === 'National Parks' ? '1–3 days' : seed.category === 'Scenic Roads' ? 'Half day to full day' : '2–5 hours',
     whatToKnow: seed.category === 'National Parks' ? 'Reserve early when possible, start before crowds, and check current conditions before leaving.' : 'Arrive with enough time to slow down; the best version of this place is rarely rushed.',
     bestPhotoSpots: photoSpotsByCategory[seed.category],
-    nearbyThingsToDo: [`Explore more of ${seed.region}`, `Find a local food stop`, `Pair it with another ${seed.category.toLowerCase()} nearby`],
+    nearbyThingsToDo: [`Explore more of ${seed.region}`, 'Find a local food stop', `Pair it with another ${seed.category.toLowerCase()} nearby`],
   };
 }
 
 const flattenedSeeds = Object.entries(seedsByState).flatMap(([state, seeds]) =>
-  seeds.map((seed) => ({ state, seed })),
+  seeds.map(([name, region, category, latitude, longitude, tags]) => ({
+    state,
+    seed: { name, region, category, latitude, longitude, tags },
+  })),
 );
 
 export const BASE_PLACES: Place[] = flattenedSeeds.map(({ state, seed }, index) => {
