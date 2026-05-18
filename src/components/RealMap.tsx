@@ -28,9 +28,22 @@ function markerClass(place: Place) {
 export default function RealMap({ places, filters, onSelectPlace }: RealMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
-  const markersRef = useRef<maplibregl.Marker[]>([]);
+  const markersRef = useRef<Map<string, maplibregl.Marker>>(new Map());
+  const onSelectPlaceRef = useRef(onSelectPlace);
 
   const visiblePlaces = useMemo(() => places.filter((place) => shouldShow(place, filters)), [places, filters]);
+  const cameraSignature = useMemo(
+    () =>
+      visiblePlaces
+        .map((place) => `${place.id}:${place.longitude}:${place.latitude}`)
+        .sort()
+        .join('|'),
+    [visiblePlaces],
+  );
+
+  useEffect(() => {
+    onSelectPlaceRef.current = onSelectPlace;
+  }, [onSelectPlace]);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -48,7 +61,7 @@ export default function RealMap({ places, filters, onSelectPlace }: RealMapProps
 
     return () => {
       markersRef.current.forEach((marker) => marker.remove());
-      markersRef.current = [];
+      markersRef.current.clear();
       map.remove();
       mapRef.current = null;
     };
@@ -58,19 +71,46 @@ export default function RealMap({ places, filters, onSelectPlace }: RealMapProps
     const map = mapRef.current;
     if (!map) return;
 
-    markersRef.current.forEach((marker) => marker.remove());
-    markersRef.current = visiblePlaces.map((place) => {
+    const nextVisibleIds = new Set(visiblePlaces.map((place) => place.id));
+
+    markersRef.current.forEach((marker, placeId) => {
+      if (!nextVisibleIds.has(placeId)) {
+        marker.remove();
+        markersRef.current.delete(placeId);
+      }
+    });
+
+    visiblePlaces.forEach((place) => {
+      const existingMarker = markersRef.current.get(place.id);
+
+      if (existingMarker) {
+        const element = existingMarker.getElement() as HTMLButtonElement;
+        element.className = markerClass(place);
+        element.title = place.name;
+        element.setAttribute('aria-label', place.name);
+        element.onclick = () => onSelectPlaceRef.current(place);
+        existingMarker.setLngLat([place.longitude, place.latitude]);
+        return;
+      }
+
       const element = document.createElement('button');
       element.type = 'button';
       element.className = markerClass(place);
       element.title = place.name;
       element.setAttribute('aria-label', place.name);
-      element.addEventListener('click', () => onSelectPlace(place));
+      element.onclick = () => onSelectPlaceRef.current(place);
 
-      return new maplibregl.Marker({ element })
+      const marker = new maplibregl.Marker({ element })
         .setLngLat([place.longitude, place.latitude])
         .addTo(map);
+
+      markersRef.current.set(place.id, marker);
     });
+  }, [visiblePlaces]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
 
     if (visiblePlaces.length) {
       const bounds = new maplibregl.LngLatBounds();
@@ -79,7 +119,7 @@ export default function RealMap({ places, filters, onSelectPlace }: RealMapProps
     } else {
       map.easeTo({ center: [-98.5795, 39.8283], zoom: 3.15, duration: 700 });
     }
-  }, [visiblePlaces, onSelectPlace]);
+  }, [cameraSignature, visiblePlaces]);
 
   return (
     <div className="real-map glass-panel relative overflow-hidden rounded-[2rem] border border-white/10">
