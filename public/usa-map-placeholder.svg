@@ -1,0 +1,56 @@
+<svg width="1200" height="720" viewBox="0 0 1200 720" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="720" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0D1520"/>
+      <stop offset="1" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="land" x1="108" y1="122" x2="1035" y2="548" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#DDE8F4" stop-opacity="0.92"/>
+      <stop offset="0.48" stop-color="#A7BED7" stop-opacity="0.82"/>
+      <stop offset="1" stop-color="#7C93AD" stop-opacity="0.88"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(860 180) rotate(138.879) scale(432.114 287.948)">
+      <stop stop-color="#F9C98B" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#F9C98B" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="shadow" x="18" y="44" width="1120" height="620" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="20" stdDeviation="26" flood-color="#020617" flood-opacity="0.72"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="720" rx="42" fill="url(#bg)"/>
+  <rect width="1200" height="720" rx="42" fill="url(#glow)"/>
+
+  <g filter="url(#shadow)">
+    <path d="M92 259L135 230L183 226L227 198L289 197L324 181L383 191L430 181L496 193L545 181L609 193L659 190L704 207L756 202L807 216L843 213L889 233L938 239L965 261L1014 276L1041 306L1026 335L989 347L955 372L900 372L872 395L818 394L787 419L741 419L706 439L648 435L604 454L551 446L500 461L461 447L417 453L381 438L337 441L293 421L246 420L210 398L162 392L133 369L102 358L84 323L91 293L67 278L92 259Z" fill="url(#land)" stroke="#F8FAFC" stroke-opacity="0.38" stroke-width="3"/>
+
+    <path d="M1071 499C1084 489 1102 489 1113 499C1121 508 1121 523 1112 532C1101 543 1084 543 1072 532C1062 523 1062 508 1071 499Z" fill="#C7D7E8" fill-opacity="0.82"/>
+    <path d="M986 532C995 522 1012 521 1024 531C1033 540 1034 554 1024 564C1013 575 996 575 986 564C977 555 977 541 986 532Z" fill="#C7D7E8" fill-opacity="0.72"/>
+  </g>
+
+  <g stroke="#F8FAFC" stroke-opacity="0.18" stroke-width="2">
+    <path d="M177 235L176 389"/>
+    <path d="M255 207L252 418"/>
+    <path d="M338 192L337 440"/>
+    <path d="M424 186L418 452"/>
+    <path d="M517 190L501 459"/>
+    <path d="M604 194L603 452"/>
+    <path d="M693 205L706 437"/>
+    <path d="M786 213L787 417"/>
+    <path d="M883 229L872 394"/>
+    <path d="M146 276L975 278"/>
+    <path d="M120 323L1026 333"/>
+    <path d="M157 371L957 372"/>
+  </g>
+
+  <g fill="#FFFFFF" fill-opacity="0.7">
+    <circle cx="214" cy="253" r="4"/>
+    <circle cx="343" cy="246" r="4"/>
+    <circle cx="478" cy="279" r="4"/>
+    <circle cx="631" cy="261" r="4"/>
+    <circle cx="801" cy="295" r="4"/>
+    <circle cx="930" cy="321" r="4"/>
+  </g>
+
+  <text x="78" y="642" fill="#E2E8F0" fill-opacity="0.55" font-family="Inter, Arial, sans-serif" font-size="28" letter-spacing="8">USA PLACEHOLDER MAP</text>
+</svg>
