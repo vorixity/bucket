@@ -40,7 +40,7 @@ export default function RealMap({ places, filters, onSelectPlace }: RealMapProps
       style: 'https://tiles.openfreemap.org/styles/liberty',
       center: [-98.5795, 39.8283],
       zoom: 3.15,
-      attributionControl: true,
+      attributionControl: { compact: true },
     });
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
