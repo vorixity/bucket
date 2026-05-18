@@ -115,6 +115,11 @@ function statusLabel(status: PlaceStatus) {
   return 'Unsaved';
 }
 
+function visitDateLabel(visit: Visit) {
+  if (!visit.startDate && !visit.endDate) return 'Date not added';
+  return `${visit.startDate || 'Date not added'}${visit.endDate ? ` → ${visit.endDate}` : ''}`;
+}
+
 function heroGradient(place: Place) {
   const palette: Record<string, string> = {
     California: 'from-amber-300/50 via-rose-400/20 to-slate-900',
@@ -188,7 +193,7 @@ export default function App() {
       status: 'beenThere',
       visitCount: place.visitCount + 1,
       visits: [visit, ...place.visits],
-      datesVisited: [visit.startDate, ...place.datesVisited],
+      datesVisited: visit.startDate ? [visit.startDate, ...place.datesVisited] : place.datesVisited,
       photos: visit.photo ? [visit.photo, ...place.photos] : place.photos,
     }));
     setVisitPlaceId(null);
@@ -530,7 +535,7 @@ function Onboarding({
               <p className="text-sm uppercase tracking-[0.28em] text-white/45">Favorite state selected</p>
               <h2 className="mt-3 text-3xl font-semibold">Start with {homeState}</h2>
               <p className="mt-3 max-w-2xl text-white/70">
-                Mark a few places so Bucket can begin to understand your atlas. “Been There” keeps the memory attached to a real visit.
+                Mark a few places so Bucket can begin to understand your atlas. “Been There” can stay simple now, with photos and dates added only when you want them.
               </p>
               <div className="mt-6 grid gap-4 md:grid-cols-2">
                 {popularPlaces.map((place) => (
@@ -653,7 +658,7 @@ function MapTab({
                 </article>
               ))
             ) : (
-              <div className="rounded-3xl border border-white/10 bg-black/20 p-5 text-white/65">No places matched that search.</div>
+              <div className="rounded-3xl border border-white/10 bg-black/20 p-5 text-white/65">No places matched that search in the current prototype.</div>
             )}
           </div>
         )}
@@ -1001,11 +1006,11 @@ function PassportTab({ state }: { state: BucketState }) {
             {visitedPlaces.flatMap((place) => place.visits.map((visit) => ({ place, visit }))).length ? (
               visitedPlaces
                 .flatMap((place) => place.visits.map((visit) => ({ place, visit })))
-                .sort((a, b) => b.visit.startDate.localeCompare(a.visit.startDate))
+                .sort((a, b) => (b.visit.startDate || '').localeCompare(a.visit.startDate || ''))
                 .map(({ place, visit }) => (
                   <div key={visit.id} className="rounded-2xl border border-white/10 bg-black/20 p-3">
                     <p className="font-medium">{place.name}</p>
-                    <p className="text-sm text-white/55">{visit.startDate}{visit.endDate ? ` → ${visit.endDate}` : ''}</p>
+                    <p className="text-sm text-white/55">{visitDateLabel(visit)}</p>
                   </div>
                 ))
             ) : (
@@ -1195,7 +1200,7 @@ function PlacePanel({
                       place.visits.map((visit) => (
                         <div key={visit.id} className="rounded-2xl border border-white/10 p-3 text-sm text-white/70">
                           <p>{visit.visitLabel}</p>
-                          <p>{visit.startDate}{visit.endDate ? ` → ${visit.endDate}` : ''}</p>
+                          <p>{visitDateLabel(visit)}</p>
                         </div>
                       ))
                     ) : (
@@ -1290,8 +1295,9 @@ function VisitModal({ place, onClose, onSave }: { place: Place; onClose: () => v
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs uppercase tracking-[0.28em] text-white/40">Been There</p>
-            <h2 className="mt-2 text-3xl font-semibold">Save the memory</h2>
+            <h2 className="mt-2 text-3xl font-semibold">Mark as visited</h2>
             <p className="mt-2 text-white/65">{place.name}</p>
+            <p className="mt-2 text-sm text-white/50">Add memory details now, later, or not at all.</p>
           </div>
           <button className="rounded-full bg-black/20 p-2" onClick={onClose}>
             <X className="h-5 w-5" />
@@ -1300,7 +1306,7 @@ function VisitModal({ place, onClose, onSave }: { place: Place; onClose: () => v
 
         <div className="mt-5 grid gap-4">
           <label className="rounded-3xl border border-dashed border-white/15 bg-black/20 p-4 text-sm text-white/70">
-            <span className="inline-flex items-center gap-2"><Camera className="h-4 w-4" /> Upload a photo from the place</span>
+            <span className="inline-flex items-center gap-2"><Camera className="h-4 w-4" /> Upload a photo from the place (optional)</span>
             <input type="file" accept="image/*" className="mt-3 block w-full text-sm" onChange={(event) => handlePhoto(event.target.files?.[0])} />
           </label>
 
@@ -1313,21 +1319,20 @@ function VisitModal({ place, onClose, onSave }: { place: Place; onClose: () => v
 
           <div className="grid gap-4 md:grid-cols-2">
             <label>
-              <span className="mb-2 block text-sm text-white/55">Date you went</span>
+              <span className="mb-2 block text-sm text-white/55">Date you went (optional)</span>
               <input type="date" className="input-shell" value={startDate} onChange={(event) => setStartDate(event.target.value)} />
             </label>
             <label>
-              <span className="mb-2 block text-sm text-white/55">Date you left</span>
+              <span className="mb-2 block text-sm text-white/55">Date you left (optional)</span>
               <input type="date" className="input-shell" value={endDate} onChange={(event) => setEndDate(event.target.value)} />
             </label>
           </div>
-          <p className="text-xs text-white/45">A photo and start date are required before Bucket marks this place as visited.</p>
+          <p className="text-xs text-white/45">Photos and travel dates are optional. Bucket will still mark this place as visited.</p>
         </div>
 
         <button
           type="button"
           className="soft-button mt-5"
-          disabled={!startDate || !photo}
           onClick={() =>
             onSave({
               id: uid('visit'),
@@ -1339,7 +1344,7 @@ function VisitModal({ place, onClose, onSave }: { place: Place; onClose: () => v
             })
           }
         >
-          Save visit
+          Mark as Been There
         </button>
       </section>
     </div>
