@@ -29,7 +29,7 @@ body {
   background-image:
     linear-gradient(180deg, rgba(4, 7, 12, 0.35), rgba(4, 7, 12, 0.86)),
     radial-gradient(circle at top right, rgba(255, 178, 122, 0.2), transparent 30%),
-    url('/bucket-background.svg');
+    url('./bucket-background.svg');
   background-position: center;
   background-size: cover;
   background-attachment: fixed;
@@ -43,7 +43,7 @@ body {
 }
 
 .soft-button {
-  @apply rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white/85 transition hover:bg-white/15;
+  @apply rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-white/85 transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-40;
 }
 
 .soft-button-active {
