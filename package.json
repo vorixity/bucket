@@ -12,6 +12,7 @@
     "@vitejs/plugin-react": "latest",
     "clsx": "latest",
     "lucide-react": "latest",
+    "maplibre-gl": "latest",
     "react": "latest",
     "react-dom": "latest"
   },
